@@ -1,0 +1,237 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "NamespaceName": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 20,
+            "metadata": {
+                "description": "Name of the ServiceBus Namespace."
+            }
+        },
+        "EventhubName": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 20,
+            "metadata": {
+                "description": "Name of the EventHub Name."
+            }
+        },
+        "EventHubSkuName": {
+            "type": "string",
+            "allowedValues": [
+                "Basic",
+                "Standard",
+                "Premium"
+            ],
+            "metadata": {
+                "description": "Name of this Sku"
+            }
+        },
+        "EventHubSkuTier": {
+            "type": "string",
+            "allowedValues": [
+                "Basic",
+                "Standard",
+                "Premium"
+            ],
+            "metadata": {
+                "description": "The tier of this particular SKU."
+            }
+        },
+        "EventHubCapacity": {
+            "type": "int",
+            "minValue": 1,
+            "maxValue": 20,
+            "defaultValue": 1,
+            "metadata": {
+                "description": "The eventhub throughput units"
+            }
+        },
+        "MessageRetentionInDays": {
+            "type": "int",
+            "minValue": 1,
+            "maxValue": 7,
+            "defaultValue": 1,
+            "metadata": {
+                "description": "Retention Policy for the Messages"
+            }
+        },
+        "PartitionCount": {
+            "type": "int",
+            "minValue": 2,
+            "maxValue": 32,
+            "defaultValue": 2,
+            "metadata": {
+                "description": " No.of Partitions in EventHub"
+            }
+        },
+        "ConsumerGroupName": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 25,
+            "metadata": {
+                "description": " ConsumerGroupName of EventHub"
+            }
+        },
+        "Environment": {
+            "type": "string",
+            "metadata": {
+                "description": "Environment Tag"
+            }
+        }
+    },
+    "variables": {
+        "AuthorizationRules_RootManageSharedAccessKey_name": "[concat(parameters('NamespaceName'), '/RootManageSharedAccessKey')]",
+        "AuthorizationRules_Send_name": "[concat(parameters('NamespaceName'), '/Send')]",
+        "AuthorizationRules_SendListen_name": "[concat(parameters('NamespaceName'), '/SendListen')]",
+        "AuthorizationRules_Listen_name": "[concat(parameters('NamespaceName'), '/Listen')]",
+        "AuthorizationRules_RootManageSharedAccessKey": "[concat(parameters('NamespaceName'), '/RootManageSharedAccessKey')]",
+        "AuthorizationRules_Send": "[concat(parameters('NamespaceName'), '/Send')]",
+        "AuthorizationRules_SendListen": "[concat(parameters('NamespaceName'), '/SendListen')]",
+        "AuthorizationRules_Listen": "[concat(parameters('NamespaceName'), '/Listen')]",
+        "location": "[resourceGroup().location]",
+        "ApiVersion": "2015-08-01",
+        "RootManageSharedAccessKey_AuthRuleResourceId": "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('NamespaceName'), 'RootManageSharedAccessKey')]",
+        "Send_AuthRuleResourceId": "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('NamespaceName'),'Send')]",
+        "SendListen_AuthRuleResourceId": "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('NamespaceName'),'SendListen')]",
+        "Listen_AuthRuleResourceId": "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('NamespaceName'), 'Listen')]",
+        "EventhubName_Resource1": "[concat(parameters('NamespaceName'),'/', parameters('EventhubName'))]",
+        "ConsumerGroupName_Resource1": "[concat(parameters('NamespaceName'),'/', parameters('EventhubName'),'/',parameters('ConsumerGroupName'))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.EventHub/namespaces",
+            "sku": {
+                "name": "[parameters('EventHubSkuName')]",
+                "tier": "[parameters('EventHubSkuTier')]",
+                "capacity": "[parameters('EventHubCapacity')]"
+            },
+            "kind": "EventHub",
+            "name": "[parameters('NamespaceName')]",
+            "apiVersion": "2015-08-01",
+            "location": "[variables('location')]",
+            "tags": {
+                "Environment": "[parameters('Environment')]"
+            },
+            "properties": {
+                "provisioningState": "Succeeded",
+                "serviceBusEndpoint": "[concat('https://', parameters('NamespaceName'),'.servicebus.windows.net:443/')]",
+                "enabled": true
+            }
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/AuthorizationRules",
+            "name": "[variables('AuthorizationRules_RootManageSharedAccessKey_name')]",
+            "apiVersion": "2015-08-01",
+            "properties": {
+                "rights": [
+                    "Listen",
+                    "Manage",
+                    "Send"
+                ]
+            },
+            "resources": [],
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('NamespaceName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/AuthorizationRules",
+            "name": "[variables('AuthorizationRules_Send_name')]",
+            "apiVersion": "2015-08-01",
+            "properties": {
+                "rights": [
+                    "Send"
+                ]
+            },
+            "resources": [],
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('NamespaceName'))]",
+                "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('NamespaceName'), 'RootManageSharedAccessKey')]"
+            ]
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/AuthorizationRules",
+            "name": "[variables('AuthorizationRules_SendListen_name')]",
+            "apiVersion": "2015-08-01",
+            "properties": {
+                "rights": [
+                    "Send",
+                    "Listen"
+                ]
+            },
+            "resources": [],
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('NamespaceName'))]",
+                "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('NamespaceName'), 'RootManageSharedAccessKey')]",
+                "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('NamespaceName'), 'Send')]"
+            ]
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/AuthorizationRules",
+            "name": "[variables('AuthorizationRules_Listen_name')]",
+            "apiVersion": "2015-08-01",
+            "properties": {
+                "rights": [
+                    "Listen"
+                ]
+            },
+            "resources": [],
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('NamespaceName'))]",
+                "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('NamespaceName'), 'RootManageSharedAccessKey')]",
+                "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('NamespaceName'), 'Send')]",
+                "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('NamespaceName'), 'SendListen')]"
+            ]
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/eventhubs",
+            "name": "[variables('EventhubName_Resource1')]",
+            "apiVersion": "2015-08-01",
+            "location": "[variables('location')]",
+            "properties": {
+                "messageRetentionInDays": "[parameters('MessageRetentionInDays')]",
+                "partitionCount": "[parameters('PartitionCount')]"
+            },
+            "tags": {
+                "Environment": "[parameters('Environment')]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('NamespaceName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
+            "name": "[variables('ConsumerGroupName_Resource1')]",
+            "apiVersion": "2015-08-01",
+            "location": "[variables('location')]",
+            "properties": {
+            },
+            "resources": [],
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('NamespaceName'))]",
+                "[resourceId('Microsoft.EventHub/namespaces/eventhubs', parameters('NamespaceName'), parameters('EventhubName'))]"
+            ]
+        }
+    ],
+    "outputs": {
+        "SharedAccessPolicyConnectionString": {
+            "type": "string",
+            "value": "[listkeys(variables('RootManageSharedAccessKey_AuthRuleResourceId'), variables('apiVersion')).primaryConnectionString]"
+        },
+        "SendAccessPolicyConnectionString": {
+            "type": "string",
+            "value": "[listkeys(variables('Send_AuthRuleResourceId'), variables('apiVersion')).primaryConnectionString]"
+        },
+        "SendListenAccessPolicyConnectionString": {
+            "type": "string",
+            "value": "[listkeys(variables('SendListen_AuthRuleResourceId'), variables('apiVersion')).primaryConnectionString]"
+        },
+        "ListenAccessPolicyConnectionString": {
+            "type": "string",
+            "value": "[listkeys(variables('Listen_AuthRuleResourceId'), variables('apiVersion')).primaryConnectionString]"
+        }
+    }
+}

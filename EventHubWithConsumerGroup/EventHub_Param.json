@@ -1,0 +1,30 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "NamespaceName": {
+            "value": "ServiceBusNamespaceName"
+        },
+        "EventhubName": {
+            "value": "EventHubName"
+        },
+        "MessageRetentionInDays": {
+            "value": 5
+        },
+        "EventHubSkuName": {
+            "value": "Standard"
+        },
+        "EventHubSkuTier": {
+            "value": "Standard"
+        },
+        "EventHubCapacity": {
+            "value": 4
+        },
+        "PartitionCount": {
+            "value": 5
+        },
+        "ConsumerGroupName": {
+            "value": "ConsumerGroupName"
+        }
+    }
+}
